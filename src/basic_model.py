@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-LAYER_SIZE = 512
+LAYER_SIZE = 256
 
 class BasicNetwork(nn.Module):
     def __init__(self, image_shape, output_size):

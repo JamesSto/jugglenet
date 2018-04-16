@@ -23,7 +23,17 @@ class PatternImageDataset(torch.utils.data.Dataset):
         self.images = []
         self.labels = []
 
-        if not os.path.exists("data_cache/train_data.npy"):
+        if partition == "TRAIN":
+            data_file = "data_cache/train_data.npy"
+            labels_file = "data_cache/train_labels.npy"
+        elif partition.startswith("VALID"):
+            data_file = "data_cache/validation_data.npy"
+            labels_file = "data_cache/validation_labels.npy"
+        else:
+            data_file = "data_cache/test_data.npy"
+            labels_file = "data_cache/test_labels.npy"
+
+        if not os.path.exists(data_file):
             print("Preparing", partition,  "dataset...")
             for i, name in tqdm(enumerate(PATTERNS), total=len(PATTERNS)):
                 for path in os.listdir(TRAIN_DIR):
@@ -50,25 +60,11 @@ class PatternImageDataset(torch.utils.data.Dataset):
             self.labels = np.array(self.labels)
             self.images = np.array(self.images).astype('float32')/255
 
-            if partition == "TRAIN":
-                np.save("data_cache/train_data.npy", self.images)
-                np.save("data_cache/train_labels.npy", self.labels)
-            elif partition.startswith("VALID"):
-                np.save("data_cache/validation_data.npy", self.images)
-                np.save("data_cache/validation_labels.npy", self.labels)
-            else:
-                np.save("data_cache/test_data.npy", self.images)
-                np.save("data_cache/test_labels.npy", self.labels)
+            np.save(data_file, self.images)
+            np.save(labels_file, self.labels)
         else:
-            if partition == "TRAIN":
-                self.images = np.load("data_cache/train_data.npy")
-                self.labels = np.load("data_cache/train_labels.npy")
-            elif partition == "TEST":
-                self.images = np.load("data_cache/test_data.npy")
-                self.labels = np.load("data_cache/test_labels.npy")
-            elif partition.startswith("VALID"):
-                self.images = np.load("data_cache/validation_data.npy")
-                self.labels = np.load("data_cache/validation_labels.npy")
+            self.images = np.load(data_file)
+            self.labels = np.load(labels_file)
 
 
         self.images = torch.from_numpy(self.images)
