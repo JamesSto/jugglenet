@@ -1,3 +1,4 @@
 data_cache
 *.model
 tracking_images
+__pycache__
