@@ -15,7 +15,6 @@ from models import BasicDenseNetwork, ConvolutionalNetwork
 from data import PatternImageDataset, PATTERNS
 
 
-
 NUM_EPOCHS = 10
 BATCH_SIZE = 128
 LEARNING_RATE = 0.00005

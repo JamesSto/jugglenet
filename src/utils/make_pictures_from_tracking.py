@@ -1,8 +1,7 @@
-import math
 import os
-import sys
-import cv2
+import json
 import numpy as np
+import cv2
 
 #this is how long the lines are
 FEATURE_TRACK_LENGTH = 120
@@ -20,9 +19,11 @@ def make_pictures(frame_data, out_folder, show):
     count = 0
     for frame_start in range(0, len(frame_data)-FEATURE_TRACK_LENGTH, STRIDE):
         img = np.zeros(IMAGE_Shape, np.uint8)
+        all_coords = []
         for frame_number in range(frame_start, frame_start+FEATURE_TRACK_LENGTH-1):
             frame = frame_data[frame_number]
-            coords = zip(*[iter(frame)]*2)
+            coords = list(zip(*[iter(frame)]*2))
+            all_coords.append(coords)
             next_frame = frame_data[frame_number+1]
             next_coords = zip(*[iter(next_frame)]*2)
 
@@ -32,6 +33,8 @@ def make_pictures(frame_data, out_folder, show):
         if show:
             cv2.imshow('img', img)
         cv2.imwrite(out_folder+"/" + str(count)+'.png', img)
+        with open(out_folder+"/" + str(count)+'.json', 'w') as f:
+            f.write(json.dumps(all_coords))
         k = cv2.waitKey(1)
         count += 1
 
@@ -67,4 +70,4 @@ if __name__ == "__main__":
         out_dir, _ = os.path.splitext(pattern)
         if os.path.exists(tracking_image_dir + out_dir):
             continue
-        construct_image_dataset(tracking_data_dir + pattern, tracking_image_dir + out_dir, True)
+        construct_image_dataset(tracking_data_dir + pattern, tracking_image_dir + out_dir, False)
