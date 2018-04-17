@@ -11,14 +11,14 @@ from torch.autograd import Variable
 
 from tqdm import tqdm
 
-from basic_model import BasicNetwork
+from models import BasicDenseNetwork, ConvolutionalNetwork
 from data import PatternImageDataset, PATTERNS
 
 
 
 NUM_EPOCHS = 10
-BATCH_SIZE = 256
-LEARNING_RATE = 0.00001
+BATCH_SIZE = 64
+LEARNING_RATE = 0.0001
 
 def train(model, epoch, train_loader, optimizer):
     model.train()
@@ -64,7 +64,9 @@ def main():
     train_loader = torch.utils.data.DataLoader(train_dataset, 
                                                batch_size=BATCH_SIZE,
                                                shuffle=True)
-    model = BasicNetwork(train_dataset.get_example_shape(), len(PATTERNS))
+    # model = BasicDenseNetwork(train_dataset.get_example_shape(), len(PATTERNS))
+    model = ConvolutionalNetwork(train_dataset.get_example_shape(), len(PATTERNS))
+
 
     valid_dataset = PatternImageDataset("VALID")
     valid_loader = torch.utils.data.DataLoader(valid_dataset,

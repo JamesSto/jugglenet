@@ -53,6 +53,7 @@ class PatternImageDataset(torch.utils.data.Dataset):
                             h, w = img.shape
                             img = cv2.resize(img, (w//RESIZE_SCALE, h//RESIZE_SCALE))
                             h, w = img.shape
+                            img = np.expand_dims(img, 0)
                             self.images.append(img)
                             self.labels.append(i)
 
@@ -81,3 +82,7 @@ class PatternImageDataset(torch.utils.data.Dataset):
 
     def get_example_shape(self):
         return self.images[0].shape
+
+if __name__ == "__main__":
+    x = PatternImageDataset("TRAIN")
+    print(x.get_example_shape())
