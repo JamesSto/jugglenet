@@ -8,11 +8,7 @@ from tqdm import tqdm
 import torch.utils.data
 
 
-TRAIN_DIR = "../data/tracking_images"
-
-TRAIN_SIZE = .8
-TEST_SIZE = .1
-VAL_SIZE = .1
+DATA_DIR = "../data/tracking_images"
 
 RESIZE_SCALE = 3
 PATTERNS = ['cascade', '423', 'columns', 'twoInLH', 'twoInRh']
@@ -24,31 +20,22 @@ class PatternImageDataset(torch.utils.data.Dataset):
         self.labels = []
 
         if partition == "TRAIN":
-            data_file = "data_cache/train_data.npy"
-            labels_file = "data_cache/train_labels.npy"
-        elif partition.startswith("VALID"):
-            data_file = "data_cache/validation_data.npy"
-            labels_file = "data_cache/validation_labels.npy"
+            data_file = "data_cache/train_images.npy"
+            labels_file = "data_cache/train_image_labels.npy"
+        elif partition == "VALID":
+            data_file = "data_cache/validation_images.npy"
+            labels_file = "data_cache/validation_image_labels.npy"
         else:
-            data_file = "data_cache/test_data.npy"
-            labels_file = "data_cache/test_labels.npy"
+            data_file = "data_cache/test_images.npy"
+            labels_file = "data_cache/test_image_labels.npy"
 
         if not os.path.exists(data_file):
             print("Preparing", partition,  "dataset...")
             for i, name in tqdm(enumerate(PATTERNS), total=len(PATTERNS)):
-                for path in os.listdir(TRAIN_DIR):
+                for path in os.listdir(DATA_DIR):
                     if name in path:
-                        full_path = os.path.join(TRAIN_DIR, path)
-                        nimg = len(os.listdir(full_path))
-                        if partition == "TRAIN":
-                            r = range(int(nimg*TRAIN_SIZE))
-                        elif partition == "TEST":
-                            r = range(int(nimg*TRAIN_SIZE), int(nimg*(TRAIN_SIZE+TEST_SIZE)))
-                        elif partition.startswith("VALID"):
-                            r = range(int(nimg*(TRAIN_SIZE+TEST_SIZE)), nimg)
-                        else:
-                            raise ValueError("partition must must be TRAIN, TEST, or VALID")
-                        for image_in in r:
+                        full_path = os.path.join(DATA_DIR, path, partition.lower())
+                        for image_in in range(len(os.listdir(full_path))):
                             img = cv2.imread(os.path.join(full_path, str(image_in) + ".png"), 0)
                             h, w = img.shape
                             img = cv2.resize(img, (w//RESIZE_SCALE, h//RESIZE_SCALE))
@@ -82,6 +69,11 @@ class PatternImageDataset(torch.utils.data.Dataset):
 
     def get_example_shape(self):
         return self.images[0].shape
+
+
+class TrackingDataset(torch.utils.data.Dataset):
+    def __init__(self, partition='TRAIN'):
+        pass
 
 if __name__ == "__main__":
     x = PatternImageDataset("TRAIN")

@@ -17,8 +17,8 @@ from data import PatternImageDataset, PATTERNS
 
 
 NUM_EPOCHS = 10
-BATCH_SIZE = 64
-LEARNING_RATE = 0.0001
+BATCH_SIZE = 128
+LEARNING_RATE = 0.00005
 
 def train(model, epoch, train_loader, optimizer):
     model.train()

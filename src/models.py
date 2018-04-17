@@ -55,3 +55,7 @@ class ConvolutionalNetwork(nn.Module):
         layer1_out = self.activation(self.layer1(flat))
         out = self.softmax(self.layer2(layer1_out))
         return out
+
+class LSTMNetwork(nn.Module):
+    def __init__(self, output_size):
+        pass
