@@ -44,7 +44,7 @@ def train(model, epoch, train_loader, optimizer, writer):
         optimizer.zero_grad()
         output = model(imgs)
 
-        loss = torch.nn.functional.cross_entropy(output, labels)
+        loss = torch.nn.functional.cross_entropy(output, labels, weight=train_loader.dataset.get_weights())
         loss.backward()
         optimizer.step()
 
@@ -60,7 +60,7 @@ def train(model, epoch, train_loader, optimizer, writer):
             if total > 0:
                 writer.add_scalar("train/" + pattern + "_accuracy", correct/total, global_step)
 
-def eval(model, epoch, valid_loader, writer):
+def evaluate(model, epoch, valid_loader, writer):
     model.eval()
 
     correct_totals = torch.zeros(len(PATTERNS))
@@ -121,7 +121,7 @@ def main(model):
 
     for i in range(NUM_EPOCHS):
         train(model, i, train_loader, optimizer, writer)
-        eval(model, i, valid_loader, writer)
+        evaluate(model, i, valid_loader, writer)
 
 if __name__ == "__main__":
     parser = ArgumentParser()
