@@ -1,17 +1,12 @@
-import os
-import pickle
-
-import cv2
+import math
+from argparse import ArgumentParser
 import numpy as np
 import matplotlib.pyplot as plt
-import math
 
 import torch
 import torch.utils.data
 from torch.autograd import Variable
 from tensorboardX import SummaryWriter
-
-from tqdm import tqdm
 
 from models import BasicDenseNetwork, ConvolutionalNetwork
 from data import PatternImageDataset, PATTERNS
@@ -19,7 +14,29 @@ from data import PatternImageDataset, PATTERNS
 
 NUM_EPOCHS = 10
 BATCH_SIZE = 64
-LEARNING_RATE = 0.00005
+LEARNING_RATE = 0.00003
+
+def per_class_totals(output, labels, num_classes):
+    _, output = torch.max(output, dim=1)
+    corrects = torch.zeros(len(PATTERNS))
+    totals = torch.zeros(len(PATTERNS))
+    for i in range(num_classes):
+        out = output[labels == i]
+        if i == 4:
+            print(out)
+        if len(out.size()) < 1:
+            out_total = 0
+        else:
+            out_total = out.size()[0]
+        out_corrects = torch.nonzero(out == i)
+        if len(out_corrects.size()) > 0:
+            num_correct = out_corrects.size()[0]
+        else:
+            num_correct = 0
+        corrects[i] = num_correct
+        totals[i] = out_total
+
+    return corrects, totals
 
 def train(model, epoch, train_loader, optimizer, writer):
     model.train()
@@ -40,9 +57,16 @@ def train(model, epoch, train_loader, optimizer, writer):
         writer.add_scalar("train/accuracy", accuracy, global_step)
         writer.add_scalar("train/loss", loss, global_step)
 
+        corrects, totals = per_class_totals(output, labels, len(PATTERNS))
+        for pattern, correct, total in zip(PATTERNS, corrects, totals):
+            if total > 0:
+                writer.add_scalar("train/" + pattern + "_accuracy", correct/total, global_step)
+
 def eval(model, epoch, valid_loader, writer):
     model.eval()
 
+    correct_totals = torch.zeros(len(PATTERNS))
+    class_totals = torch.zeros(len(PATTERNS))
     correct_total = 0
     loss_total = 0
     num_batches = 0
@@ -55,6 +79,9 @@ def eval(model, epoch, valid_loader, writer):
         preds = torch.max(output, dim=1)[1]
         correct_total += torch.sum(torch.eq(preds, labels).float())
         num_batches += 1
+        corrects, totals = per_class_totals(output, labels, len(PATTERNS))
+        correct_totals += corrects
+        class_totals += totals
 
     accuracy = (correct_total / len(valid_loader.dataset)).data[0]
     loss = (loss_total / num_batches)
@@ -65,14 +92,22 @@ def eval(model, epoch, valid_loader, writer):
     writer.add_scalar("valid/accuracy", accuracy, epoch)
     writer.add_scalar("valid/loss", loss, epoch)
 
+    for pattern, correct, total in zip(PATTERNS, correct_totals, class_totals):
+        if total > 0:
+            writer.add_scalar("valid/" + pattern + "_accuracy", correct/total, epoch)
 
-def main():
+
+def main(model):
     train_dataset = PatternImageDataset()
     train_loader = torch.utils.data.DataLoader(train_dataset, 
                                                batch_size=BATCH_SIZE,
                                                shuffle=True)
-    model = BasicDenseNetwork(train_dataset.get_example_shape(), len(PATTERNS))
-    # model = ConvolutionalNetwork(train_dataset.get_example_shape(), len(PATTERNS))
+    if model.lower().startswith("conv"):
+        model = ConvolutionalNetwork(train_dataset.get_example_shape(), len(PATTERNS))
+    elif model.lower().startswith("b"):
+        model = BasicDenseNetwork(train_dataset.get_example_shape(), len(PATTERNS))
+    else:
+        raise ValueError("Invalid model")
 
 
     valid_dataset = PatternImageDataset("VALID")
@@ -89,4 +124,8 @@ def main():
         eval(model, i, valid_loader, writer)
 
 if __name__ == "__main__":
-    main()
+    parser = ArgumentParser()
+    parser.add_argument("-m", default="conv")
+    args = parser.parse_args()
+
+    main(args.m)

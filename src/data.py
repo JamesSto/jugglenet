@@ -20,31 +20,36 @@ class PatternImageDataset(torch.utils.data.Dataset):
         self.labels = []
 
         print("Preparing", partition, "dataset...")
-        for i, name in tqdm(enumerate(PATTERNS), total=len(PATTERNS)):
+        for i, name in enumerate(PATTERNS):
             for path in os.listdir(DATA_DIR):
-                if name in path:
+                if name + "_" in path:
                     full_path = os.path.join(DATA_DIR, path, partition.lower())
                     imgs = [x for x in os.listdir(full_path) if os.path.splitext(x)[1] == '.png']
                     for image_name in imgs:
                         img_path = os.path.join(full_path, image_name)
-                        self.images.append(img_path)
+                        # Append both the flipped and unflipped version to the image dataset
+                        self.images.append((img_path, False))
+                        self.images.append((img_path, True))
                         self.labels.append(i)
+                        self.labels.append(i)
+
 
         #make train_labels
         self.labels = np.array(self.labels)
         self.labels = torch.from_numpy(self.labels)
 
-    def _process_image(self, img_path):
+    def _process_image(self, img_path, flip):
         img = cv2.imread(img_path, 0)
         h, w = img.shape
         img = cv2.resize(img, (w//RESIZE_SCALE, h//RESIZE_SCALE)).astype('float32')/255
-        h, w = img.shape
+        if flip:
+            img = cv2.flip(img, 1)
         img = np.expand_dims(img, 0)
         return torch.from_numpy(img)
 
 
     def __getitem__(self, i):
-        img = self._process_image(self.images[i])        
+        img = self._process_image(*self.images[i])        
         return (img, self.labels[i])
 
     def __len__(self):
