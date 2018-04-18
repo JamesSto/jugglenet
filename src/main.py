@@ -4,10 +4,12 @@ import pickle
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 import torch
 import torch.utils.data
 from torch.autograd import Variable
+from tensorboardX import SummaryWriter
 
 from tqdm import tqdm
 
@@ -16,10 +18,10 @@ from data import PatternImageDataset, PATTERNS
 
 
 NUM_EPOCHS = 10
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 LEARNING_RATE = 0.00005
 
-def train(model, epoch, train_loader, optimizer):
+def train(model, epoch, train_loader, optimizer, writer):
     model.train()
 
     for batch_idx, (imgs, labels) in enumerate(train_loader):
@@ -34,14 +36,17 @@ def train(model, epoch, train_loader, optimizer):
         preds = torch.max(output, dim=1)[1]
         accuracy = torch.sum(torch.eq(preds, labels).float())/len(labels)
         print("Batch", batch_idx, ": loss =", round(loss.data[0], 3), "| Accuracy: ", round(accuracy.data[0], 3))
+        global_step = batch_idx + epoch*math.ceil(len(train_loader.dataset)/train_loader.batch_size)
+        writer.add_scalar("train/accuracy", accuracy, global_step)
+        writer.add_scalar("train/loss", loss, global_step)
 
-def eval(model, epoch, valid_loader):
+def eval(model, epoch, valid_loader, writer):
     model.eval()
 
     correct_total = 0
     loss_total = 0
     num_batches = 0
-    for batch_idx, (imgs, labels) in enumerate(valid_loader):
+    for _, (imgs, labels) in enumerate(valid_loader):
         imgs, labels = Variable(imgs), Variable(labels)
         output = model(imgs)
         loss = torch.nn.functional.cross_entropy(output, labels)
@@ -57,14 +62,17 @@ def eval(model, epoch, valid_loader):
     print("EVAL EPOCH", epoch, ": ACCURACY:", round(accuracy, 3), "| LOSS:", round(loss, 3))
     print("*****************************************\n")
 
+    writer.add_scalar("valid/accuracy", accuracy, epoch)
+    writer.add_scalar("valid/loss", loss, epoch)
+
 
 def main():
     train_dataset = PatternImageDataset()
     train_loader = torch.utils.data.DataLoader(train_dataset, 
                                                batch_size=BATCH_SIZE,
                                                shuffle=True)
-    # model = BasicDenseNetwork(train_dataset.get_example_shape(), len(PATTERNS))
-    model = ConvolutionalNetwork(train_dataset.get_example_shape(), len(PATTERNS))
+    model = BasicDenseNetwork(train_dataset.get_example_shape(), len(PATTERNS))
+    # model = ConvolutionalNetwork(train_dataset.get_example_shape(), len(PATTERNS))
 
 
     valid_dataset = PatternImageDataset("VALID")
@@ -73,11 +81,12 @@ def main():
                                                shuffle=True)
 
     optimizer = torch.optim.RMSprop(model.parameters(), lr=LEARNING_RATE)
+    writer = SummaryWriter()
 
 
     for i in range(NUM_EPOCHS):
-        train(model, i, train_loader, optimizer)
-        eval(model, i, valid_loader)
+        train(model, i, train_loader, optimizer, writer)
+        eval(model, i, valid_loader, writer)
 
 if __name__ == "__main__":
     main()

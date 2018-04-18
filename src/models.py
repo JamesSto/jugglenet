@@ -29,11 +29,11 @@ class ConvolutionalNetwork(nn.Module):
 
         self.activation = nn.ReLU()
         self.conv1 = nn.Conv2d(in_channels=self.input_shape[0],
-                               out_channels=8, 
+                               out_channels=16, 
                                kernel_size=5,
                                padding=2)
         self.pool1 = nn.MaxPool2d(kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(in_channels=8,
+        self.conv2 = nn.Conv2d(in_channels=16,
                                out_channels=16, 
                                kernel_size=5,
                                padding=2)
