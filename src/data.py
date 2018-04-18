@@ -21,17 +21,22 @@ class PatternImageDataset(torch.utils.data.Dataset):
 
         print("Preparing", partition, "dataset...")
         for i, name in enumerate(PATTERNS):
+            count = 0
             for path in os.listdir(DATA_DIR):
                 if name + "_" in path:
                     full_path = os.path.join(DATA_DIR, path, partition.lower())
                     imgs = [x for x in os.listdir(full_path) if os.path.splitext(x)[1] == '.png']
                     for image_name in imgs:
                         img_path = os.path.join(full_path, image_name)
-                        # Append both the flipped and unflipped version to the image dataset
                         self.images.append((img_path, False))
-                        self.images.append((img_path, True))
                         self.labels.append(i)
-                        self.labels.append(i)
+                        # Append both the flipped and unflipped version to the training image dataset
+                        if partition == "TRAIN":
+                            self.images.append((img_path, True))
+                            self.labels.append(i)
+                        count += 1
+            if partition == "TRAIN":
+                print(PATTERNS[i] + ": ", count, "traing examples")
 
 
         #make train_labels
@@ -65,4 +70,13 @@ class TrackingDataset(torch.utils.data.Dataset):
 
 if __name__ == "__main__":
     x = PatternImageDataset("TRAIN")
+    from random import shuffle
+    s = list(range(len(x)))
+    shuffle(s)
+    for index in s:
+        img, label = x[index]
+        if label != PATTERNS.index("ss531"):
+            continue
+        cv2.imshow("531 image", np.expand_dims(np.squeeze(img.numpy()), 2))
+        cv2.waitKey(100)
     print(x.get_example_shape())

@@ -22,8 +22,6 @@ def per_class_totals(output, labels, num_classes):
     totals = torch.zeros(len(PATTERNS))
     for i in range(num_classes):
         out = output[labels == i]
-        if i == 4:
-            print(out)
         if len(out.size()) < 1:
             out_total = 0
         else:
@@ -103,8 +101,10 @@ def main(model):
                                                batch_size=BATCH_SIZE,
                                                shuffle=True)
     if model.lower().startswith("conv"):
+        print("Using ConvolutionalNetwork")
         model = ConvolutionalNetwork(train_dataset.get_example_shape(), len(PATTERNS))
     elif model.lower().startswith("b"):
+        print("Using FullyConnected Network")
         model = BasicDenseNetwork(train_dataset.get_example_shape(), len(PATTERNS))
     else:
         raise ValueError("Invalid model")
