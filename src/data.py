@@ -11,7 +11,7 @@ import torch.utils.data
 DATA_DIR = "../data/tracking_images"
 
 RESIZE_SCALE = 3
-PATTERNS = ['ss3', 'ss423', 'ss441', 'ss50505', 'ss531', 'columns', 'twoInLH', 'twoInRh']
+PATTERNS = ['ss3', 'ss423', 'ss441', 'ss50505', 'ss531', 'ss42', 'columns']
 
 class PatternImageDataset(torch.utils.data.Dataset):
     def __init__(self, partition='TRAIN'):
