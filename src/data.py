@@ -11,7 +11,7 @@ import torch.utils.data
 DATA_DIR = "../data/tracking_images"
 
 RESIZE_SCALE = 3
-PATTERNS = ['cascade', '423', 'columns', 'twoInLH', 'twoInRh']
+PATTERNS = ['ss3', 'ss423', 'ss441', 'ss50505', 'ss531', 'columns', 'twoInLH', 'twoInRh']
 
 class PatternImageDataset(torch.utils.data.Dataset):
     def __init__(self, partition='TRAIN'):
@@ -35,12 +35,10 @@ class PatternImageDataset(torch.utils.data.Dataset):
                 for path in os.listdir(DATA_DIR):
                     if name in path:
                         full_path = os.path.join(DATA_DIR, path, partition.lower())
-                        for image_in in range(len(os.listdir(full_path))):
-                            img = cv2.imread(os.path.join(full_path, str(image_in) + ".png"), 0)
-                            h, w = img.shape
-                            img = cv2.resize(img, (w//RESIZE_SCALE, h//RESIZE_SCALE))
-                            h, w = img.shape
-                            img = np.expand_dims(img, 0)
+                        imgs = [x for x in os.listdir(full_path) if os.path.splitext(x)[1] == '.png']
+                        for image_name in imgs:
+                            img_path = os.path.join(full_path, image_name)
+                            img = self._process_image(img_path)
                             self.images.append(img)
                             self.labels.append(i)
 
@@ -59,6 +57,14 @@ class PatternImageDataset(torch.utils.data.Dataset):
 
         self.labels = torch.from_numpy(self.labels)
         self.labels = self.labels
+
+    def _process_image(self, img_path):
+        img = cv2.imread(img_path, 0)
+        h, w = img.shape
+        img = cv2.resize(img, (w//RESIZE_SCALE, h//RESIZE_SCALE))
+        h, w = img.shape
+        img = np.expand_dims(img, 0)
+        return img
 
 
     def __getitem__(self, i):
