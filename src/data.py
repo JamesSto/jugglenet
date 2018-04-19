@@ -1,4 +1,5 @@
 import os
+import json
 
 import cv2
 import numpy as np
@@ -11,14 +12,17 @@ import torch.utils.data
 DATA_DIR = "../data/tracking_images"
 
 RESIZE_SCALE = 3
-PATTERNS = ['ss3', 'ss423', 'ss441', 'ss50505', 'ss531', 'ss42', 'columns']
+PATTERNS = ['ss3', 'ss423', 'ss441', 'ss50505', 'ss531', 'ss42', 'columns', 'box']
 
-class PatternImageDataset(torch.utils.data.Dataset):
-    def __init__(self, partition='TRAIN'):
-        super(PatternImageDataset, self).__init__()
+class PatternDataset(torch.utils.data.Dataset):
+    def __init__(self, partition='TRAIN', use_images=True):
+        super(PatternDataset, self).__init__()
         self.images = []
+        self.tracks = []
         self.labels = []
         self.num_examples = []
+
+        self.use_images = use_images
 
         print("Preparing", partition, "dataset...")
         for i, name in enumerate(PATTERNS):
@@ -27,19 +31,25 @@ class PatternImageDataset(torch.utils.data.Dataset):
                 if name + "_" in path:
                     full_path = os.path.join(DATA_DIR, path, partition.lower())
                     imgs = [x for x in os.listdir(full_path) if os.path.splitext(x)[1] == '.png']
-                    for image_name in imgs:
-                        img_path = os.path.join(full_path, image_name)
-                        self.images.append((img_path, False))
+                    tracks = [x for x in os.listdir(full_path) if os.path.splitext(x)[1] == '.npy']
+                    assert(len(imgs) == len(tracks))
+                    for image_name, track_name in zip(imgs, tracks):
                         self.labels.append(i)
+                        if self.use_images:
+                            img_path = os.path.join(full_path, image_name)
+                            self.images.append((img_path, False))
+                            # Append both the flipped and unflipped version to the training image dataset
+                            if partition == "TRAIN":
+                                self.images.append((img_path, True))
+                                self.labels.append(i)
+                                count += 1
+                        else:
+                            track_path = os.path.join(full_path, track_name)
+                            self.tracks.append(track_path)
                         count += 1
-                        # Append both the flipped and unflipped version to the training image dataset
-                        if partition == "TRAIN":
-                            self.images.append((img_path, True))
-                            self.labels.append(i)
-                            count += 1
             self.num_examples.append(count)
             if partition == "TRAIN":
-                print(PATTERNS[i] + ": ", count, "traing examples")
+                print(PATTERNS[i] + ": ", count, "training examples")
 
 
         #make train_labels
@@ -58,10 +68,17 @@ class PatternImageDataset(torch.utils.data.Dataset):
         img = np.expand_dims(img, 0)
         return torch.from_numpy(img)
 
+    def _process_track(self, track_path):
+        track = np.load(track_path)
+        return torch.from_numpy(track)
 
     def __getitem__(self, i):
-        img = self._process_image(*self.images[i])        
-        return (img, self.labels[i])
+        if self.use_images:
+            img = self._process_image(*self.images[i])        
+            return (img, self.labels[i])
+        else:
+            track = self._process_track(self.tracks[i])
+            return track, self.labels[i]
 
     def __len__(self):
         return len(self.labels)
@@ -73,12 +90,8 @@ class PatternImageDataset(torch.utils.data.Dataset):
         return self.weights
 
 
-class TrackingDataset(torch.utils.data.Dataset):
-    def __init__(self, partition='TRAIN'):
-        pass
-
 if __name__ == "__main__":
-    x = PatternImageDataset("TRAIN")
+    x = PatternDataset("TRAIN", use_images=False)
     # from random import shuffle
     # s = list(range(len(x)))
     # shuffle(s)

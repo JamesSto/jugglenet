@@ -33,8 +33,7 @@ def make_pictures(frame_data, out_folder, show):
         if show:
             cv2.imshow('img', img)
         cv2.imwrite(out_folder+"/" + str(count)+'.png', img)
-        with open(out_folder+"/" + str(count)+'.json', 'w') as f:
-            f.write(json.dumps(all_coords))
+        np.save(out_folder+"/" + str(count), np.array(all_coords))
         k = cv2.waitKey(1)
         count += 1
 
@@ -65,7 +64,7 @@ def construct_image_dataset(tracking_file, out_folder=None, show=False):
 
 if __name__ == "__main__":
     tracking_data_dir = "../../data/tracking_data/"
-    tracking_image_dir = "../../data/tracking_images/"
+    tracking_image_dir = "../../data/new_tracking_images/"
     for pattern in os.listdir(tracking_data_dir):
         out_dir, _ = os.path.splitext(pattern)
         if os.path.exists(tracking_image_dir + out_dir):
