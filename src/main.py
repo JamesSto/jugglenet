@@ -8,12 +8,12 @@ import torch.utils.data
 from torch.autograd import Variable
 from tensorboardX import SummaryWriter
 
-from models import BasicDenseNetwork, ConvolutionalNetwork
-from data import PatternImageDataset, PATTERNS
+from models import BasicDenseNetwork, ConvolutionalNetwork, PretrainedNetwork
+from data import PatternDataset, FrameDataset, PATTERNS
 
 
 NUM_EPOCHS = 10
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 LEARNING_RATE = 0.00003
 
 def per_class_totals(output, labels, num_classes):
@@ -95,8 +95,16 @@ def evaluate(model, epoch, valid_loader, writer):
             writer.add_scalar("valid/" + pattern + "_accuracy", correct/total, epoch)
 
 
-def main(model):
-    train_dataset = PatternImageDataset()
+def main(model, dataset):
+    if dataset == "images": 
+        print("Using image dataset")
+        train_dataset = PatternDataset()
+        valid_dataset = PatternDataset("VALID")
+    elif dataset == "frames":
+        print("Using video frame dataset")
+        train_dataset = FrameDataset()
+        valid_dataset = FrameDataset("VALID")
+
     train_loader = torch.utils.data.DataLoader(train_dataset, 
                                                batch_size=BATCH_SIZE,
                                                shuffle=True)
@@ -106,11 +114,12 @@ def main(model):
     elif model.lower().startswith("b"):
         print("Using FullyConnected Network")
         model = BasicDenseNetwork(train_dataset.get_example_shape(), len(PATTERNS))
+    elif model.lower().startswith("pre"):
+        model = PretrainedNetwork(len(PATTERNS))
     else:
         raise ValueError("Invalid model")
 
 
-    valid_dataset = PatternImageDataset("VALID")
     valid_loader = torch.utils.data.DataLoader(valid_dataset,
                                                batch_size=BATCH_SIZE,
                                                shuffle=True)
@@ -126,6 +135,7 @@ def main(model):
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("-m", default="conv")
+    parser.add_argument("-d", default="images")
     args = parser.parse_args()
 
-    main(args.m)
+    main(args.m, args.d)

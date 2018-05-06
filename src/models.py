@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+import torchvision.models as models
+
 
 LAYER_SIZE = 256
 
@@ -39,7 +41,7 @@ class ConvolutionalNetwork(nn.Module):
                                padding=2)
         self.pool2 = nn.MaxPool2d(kernel_size=2)
 
-        self.layer1 = nn.Linear(16 * 44 * 27, LAYER_SIZE)
+        self.layer1 = nn.Linear(20304, LAYER_SIZE)
         self.layer2 = nn.Linear(LAYER_SIZE, output_size)
 
         self.softmax = nn.Softmax()
@@ -55,6 +57,25 @@ class ConvolutionalNetwork(nn.Module):
         layer1_out = self.activation(self.layer1(flat))
         out = self.softmax(self.layer2(layer1_out))
         return out
+
+class PretrainedNetwork(nn.Module):
+    def __init__(self, output_size):
+        super(PretrainedNetwork, self).__init__()
+        self.pretrained_network = models.resnet18(pretrained=True)
+        self.output_layer = nn.Linear(1000, output_size)
+        
+
+    def forward(self, image):
+        return self.output_layer(self.pretrained_network(image))
+
+    def train(self):
+        self.pretrained_network.train()
+        super(PretrainedNetwork, self).train()
+
+    def eval(self):
+        self.pretrained_network.eval()
+        super(PretrainedNetwork, self).eval()
+
 
 class LSTMNetwork(nn.Module):
     def __init__(self, output_size):
